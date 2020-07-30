@@ -66,7 +66,7 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
 
         var localArc:Pose = Pose(Math.cos(0.5*Math.PI-a)*r,Math.sin(0.5*Math.PI-a)*r-r);
 
-        localArc.rotate(transDir-newPos.r);
+        localArc.rotate(transDir+newPos.r);
 
         newPos.add(localArc);
 
@@ -78,7 +78,7 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
         var step:Pose = Pose(0.0,0.0,0.0);
         encStep.scale(this.rad,true);
         step.y = 0.5*(encStep.x+encStep.y);
-        step.r = (encStep.x-encStep.y)/this.dist;
+        step.r = (encStep.y-encStep.x)/this.dist;
         step.x = encStep.r;
 
 

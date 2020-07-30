@@ -145,7 +145,7 @@ public class BasicOpMode_Iterative extends OpMode
         }
         else
         {
-            mecController.setVec(new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,gamepad1.right_stick_x),1,true,true,1000,localizer.getPos().getR());
+            mecController.setVec(new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x),1,true,true,1000,localizer.getPos().getR());
         }
     }
 

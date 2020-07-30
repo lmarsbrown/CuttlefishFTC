@@ -18,10 +18,10 @@ class MecanumController(rightFront: Motor, rightBack: Motor, leftFront: Motor,le
         if(!holdRote)
         {
             var scale:Double = Math.min(power/(Math.abs(direction.x)+Math.abs(direction.y)+Math.abs(direction.r)),1.0);
-            lfm.setPower((-direction.y-direction.x-direction.r)*scale);
-            rfm.setPower((-direction.y+direction.x+direction.r)*scale);
-            lbm.setPower((-direction.y+direction.x-direction.r)*scale);
-            rbm.setPower((-direction.y-direction.x+direction.r)*scale);
+            lfm.setPower((-direction.y-direction.x+direction.r)*scale);
+            rfm.setPower((-direction.y+direction.x-direction.r)*scale);
+            lbm.setPower((-direction.y+direction.x+direction.r)*scale);
+            rbm.setPower((-direction.y-direction.x-direction.r)*scale);
         }
         else
         {
@@ -31,10 +31,10 @@ class MecanumController(rightFront: Motor, rightBack: Motor, leftFront: Motor,le
             var r = Math.min(rPID.power,maxRotationPriority);
             if(Math.abs(r) < 0.11) r = 0.0;
             var scale:Double = Math.min(power/(Math.abs(direction.x)+Math.abs(direction.y)+Math.abs(r)),1.0);
-            lfm.setPower((-direction.y-direction.x-r)*scale);
-            rfm.setPower((-direction.y+direction.x+r)*scale);
-            lbm.setPower((-direction.y+direction.x-r)*scale);
-            rbm.setPower((-direction.y-direction.x+r)*scale);
+            lfm.setPower((-direction.y-direction.x+r)*scale);
+            rfm.setPower((-direction.y+direction.x-r)*scale);
+            lbm.setPower((-direction.y+direction.x+r)*scale);
+            rbm.setPower((-direction.y-direction.x-r)*scale);
         }
     }
 

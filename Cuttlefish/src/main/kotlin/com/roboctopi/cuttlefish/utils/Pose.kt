@@ -42,7 +42,7 @@ class Pose {
         this.y -= input.y;
         if(rotate)
         {
-            this.rotate(input.r);
+            this.rotate(-input.r);
             this.r -= input.r;
         }
     }
