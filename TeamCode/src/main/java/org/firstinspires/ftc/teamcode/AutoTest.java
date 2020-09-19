@@ -29,28 +29,23 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
+import com.roboctopi.cuttlefish.Queue.DelayTask;
 import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
-import com.roboctopi.cuttlefish.components.Motor;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
 import com.roboctopi.cuttlefish.controller.Waypoint;
 import com.roboctopi.cuttlefish.localizer.EncoderLocalizer;
-import com.roboctopi.cuttlefish.utils.PID;
 import com.roboctopi.cuttlefish.utils.Pose;
 
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
-
-import static java.lang.Math.abs;
-import static java.lang.Math.min;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -66,9 +61,9 @@ import static java.lang.Math.min;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
+@Autonomous(name="Auto Test", group="Iterative Opmode")
 //@Disabled
-public class BasicOpMode_Iterative extends OpMode
+public class AutoTest extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -78,12 +73,8 @@ public class BasicOpMode_Iterative extends OpMode
     private DcMotor rightBack;
     private EncoderLocalizer localizer;
     private MecanumController mecController;
-    private Pose savedPos = new Pose(0.0,0.0,0.0);
     private PTPController ptp;
-    private Boolean bPressed = false;
-    private Boolean aPressed = false;
     private TaskQueue queue = new TaskQueue();
-    private Pose end;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -126,7 +117,12 @@ public class BasicOpMode_Iterative extends OpMode
     @Override
     public void start() {
         runtime.reset();
-        queue.pause();
+        queue.addTask(new PointTask(new Waypoint( new Pose(500,500,0) , Math.PI*2,200,true ),ptp));
+        queue.addTask(new PointTask(new Waypoint( new Pose(0,1000,0) , 0.05,10,false ),ptp));
+        queue.addTask(new DelayTask(2000));
+        queue.addTask(new PointTask(new Waypoint( new Pose(0,0,Math.PI*0.5) , 0.05,10,false ),ptp));
+        queue.addTask(new DelayTask(500));
+        queue.addTask(new PointTask(new Waypoint( new Pose(0,500,0) , 0.05,10,false ),ptp));
     }
 
     /*
@@ -137,59 +133,13 @@ public class BasicOpMode_Iterative extends OpMode
         localizer.relocalize();
         queue.update();
 
+        telemetry.addData("X",localizer.getPos().getX());
+        telemetry.addData("Y",localizer.getPos().getY());
+        telemetry.addData("R",localizer.getPos().getR());
+        telemetry.addData("Debug",mecController.getDebug());
+        telemetry.addData("Err",Math.abs(localizer.getPos().getR()-Math.PI*0.5));
 
-
-        telemetry.addData("pos", localizer.getPos().getX()+", "+localizer.getPos().getY()+", "+localizer.getPos().getR()/(Math.PI*2));
-        telemetry.addData("SPEEEEEEEEEEED",localizer.getSpeed());
-        telemetry.addData("Task:", queue.getTask());
-        telemetry.addData("Idle:",queue.getIdle());
-        telemetry.addData("Tasks:",queue.getTasks().size());
-        telemetry.addData("Paused:",queue.getPaused());
-        telemetry.addData("Empty:",queue.getTasks().isEmpty());
-        telemetry.addData("Dir:",ptp.getDir().getX()+" "+ptp.getDir().getY()+" "+ptp.getDir().getR());
-        telemetry.addData("RPos:",ptp.getRPos().getX()+" "+ptp.getRPos().getY()+" "+ptp.getRPos().getR());
-        telemetry.addData("PPos:",ptp.getPPos().getX()+" "+ptp.getPPos().getY()+" "+ptp.getPPos().getR());
-        telemetry.addData("Power:",ptp.getMPD().getPower());
         telemetry.update();
-
-        if(gamepad1.a&&!aPressed)
-        {
-            aPressed = true;
-            queue.addTask(new PointTask(new Waypoint(localizer.getPos().clone(), 0.02,50,false),ptp));
-            end = localizer.getPos().clone();
-        }
-        if(gamepad1.b&&!bPressed)
-        {
-            bPressed = true;
-            queue.unpause();
-            //ptp.gotoPointLoop(savedPos);
-        }
-        else if(queue.getPaused())
-        {
-            double power;
-            if(gamepad1.left_stick_button)
-            {
-                power = 0.3;
-            }
-            else
-            {
-                power = 1;
-            }
-            mecController.setVec(new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x),power,false,1000,localizer.getPos().getR());
-        }
-        else if(queue.getIdle())
-        {
-            queue.pause();
-        }
-
-        if(!gamepad1.b)
-        {
-            bPressed = false;
-        }
-        if(!gamepad1.a)
-        {
-            aPressed = false;
-        }
     }
 
     /*
