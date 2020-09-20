@@ -121,8 +121,6 @@ public class AutoTest extends OpMode
         queue.addTask(new PointTask(new Waypoint( new Pose(0,1000,0) , 0.05,10,false ),ptp));
         queue.addTask(new DelayTask(2000));
         queue.addTask(new PointTask(new Waypoint( new Pose(0,0,Math.PI*0.5) , 0.05,10,false ),ptp));
-        queue.addTask(new DelayTask(500));
-        queue.addTask(new PointTask(new Waypoint( new Pose(0,500,0) , 0.05,10,false ),ptp));
     }
 
     /*

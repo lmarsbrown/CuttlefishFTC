@@ -17,11 +17,11 @@ class PID(p:Double, i:Double, d:Double, initial: Double = 0.0) {
         var t = System.currentTimeMillis();
 
         //TODO: I might be broken if not its in D because its an issue with pid
-        i += iGain*p*((t-pTime)/1000);
+        i += iGain*p*0.1/**((t-pTime).toDouble()/1000)*/;
         i = Math.min(i,1.0);
-        debug = i;
+        debug = i ;
         var d = (p-pErr)/(t-pTime);
-        power = pGain*p+i+d*dGain;
+        power = /*pGain*p+*/i/*+d*dGain*/;
         pErr = p;
         pTime = t;
         return power;
