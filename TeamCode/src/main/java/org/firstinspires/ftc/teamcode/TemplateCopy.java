@@ -29,28 +29,26 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
-import com.roboctopi.cuttlefish.components.Motor;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.controller.Waypoint;
 import com.roboctopi.cuttlefish.localizer.EncoderLocalizer;
-import com.roboctopi.cuttlefish.utils.PID;
 import com.roboctopi.cuttlefish.utils.Pose;
 
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
-
-import static java.lang.Math.abs;
-import static java.lang.Math.min;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -66,9 +64,9 @@ import static java.lang.Math.min;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
+@TeleOp(name="Telemetry IMU", group="Iterative Opmode")
 //@Disabled
-public class BasicOpMode_Iterative extends OpMode
+public class TemplateCopy extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -78,12 +76,15 @@ public class BasicOpMode_Iterative extends OpMode
     private DcMotor rightBack;
     private EncoderLocalizer localizer;
     private MecanumController mecController;
-    private Pose savedPos = new Pose(0.0,0.0,0.0);
     private PTPController ptp;
-    private Boolean bPressed = false;
-    private Boolean aPressed = false;
     private TaskQueue queue = new TaskQueue();
-    private Pose end;
+
+    // The IMU sensor object
+    BNO055IMU imu;
+
+    // State used for updating telemetry
+    Orientation angles;
+    Acceleration gravity;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -111,7 +112,23 @@ public class BasicOpMode_Iterative extends OpMode
         localizer  = new EncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+        // and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
     }
+
+
 
     /*
      * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
@@ -136,61 +153,13 @@ public class BasicOpMode_Iterative extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
-
-
-
-        telemetry.addData("pos", localizer.getPos().getX()+", "+localizer.getPos().getY()+", "+localizer.getPos().getR()/(Math.PI*2));
-        telemetry.addData("SPEEEEEEEEEEED",localizer.getSpeed());
-        telemetry.addData("Task", queue.getTask());
-        telemetry.addData("Idle",queue.getIdle());
-        telemetry.addData("Tasks",queue.getTasks().size());
-        telemetry.addData("Paused",queue.getPaused());
-        telemetry.addData("Empty",queue.getTasks().isEmpty());
-        telemetry.addData("Dir",ptp.getDir().getX()+" "+ptp.getDir().getY()+" "+ptp.getDir().getR());
-        telemetry.addData("RPos",ptp.getRPos().getX()+" "+ptp.getRPos().getY()+" "+ptp.getRPos().getR());
-        telemetry.addData("PPos",ptp.getPPos().getX()+" "+ptp.getPPos().getY()+" "+ptp.getPPos().getR());
-        telemetry.addData("Power",ptp.getMPD().getPower());
-        telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
         telemetry.update();
-
-        if(gamepad1.a&&!aPressed)
-        {
-            aPressed = true;
-            queue.addTask(new PointTask(new Waypoint(localizer.getPos().clone(), 0.02,50,false),ptp));
-            end = localizer.getPos().clone();
-        }
-        if(gamepad1.b&&!bPressed)
-        {
-            bPressed = true;
-            queue.unpause();
-            //ptp.gotoPointLoop(savedPos);
-        }
-        else if(queue.getPaused())
-        {
-            double power;
-            if(gamepad1.left_stick_button)
-            {
-                power = 0.3;
-            }
-            else
-            {
-                power = 1;
-            }
-            mecController.setVec(new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x),power,false,1000,localizer.getPos().getR());
-        }
-        else if(queue.getIdle())
-        {
-            queue.pause();
-        }
-
-        if(!gamepad1.b)
-        {
-            bPressed = false;
-        }
-        if(!gamepad1.a)
-        {
-            aPressed = false;
-        }
+        telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetry.addData("angle 1::", angles.firstAngle);
+        Pose direction = new Pose(gamepad1.left_stick_x, -gamepad1.left_stick_y,-gamepad1.right_stick_x);
+        direction.rotate(-angles.firstAngle*(Math.PI/180),new Pose(0.0, 0.0, 0.0));
+        mecController.setVec(direction, 1, false, 0, 0);
     }
 
     /*

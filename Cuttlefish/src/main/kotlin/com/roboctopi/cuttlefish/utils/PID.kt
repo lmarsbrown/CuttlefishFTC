@@ -21,7 +21,7 @@ class PID(p:Double, i:Double, d:Double, initial: Double = 0.0) {
         i = Math.min(i,1.0);
         debug = i ;
         var d = (p-pErr)/(t-pTime);
-        power = /*pGain*p+*/i/*+d*dGain*/;
+        power = pGain*p+/*i+*/d*dGain;
         pErr = p;
         pTime = t;
         return power;

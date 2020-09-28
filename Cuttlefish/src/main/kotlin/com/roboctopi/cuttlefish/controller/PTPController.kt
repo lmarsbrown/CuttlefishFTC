@@ -17,7 +17,7 @@ class PTPController
     var rPos:Pose = Pose(0.0,0.0,0.0);
     var pPos:Pose = Pose(0.0,0.0,0.0);
     var distance:Double = 0.0;
-    var debug:Double = 0.0;
+    var debug:Pose = Pose(0.0,0.0,0.0);
 
     constructor(mecController: MecanumController,
                 localizer: Localizer)
@@ -47,8 +47,9 @@ class PTPController
         val power = -mPD.update(dist);
 
         direction.scale(power,false);
+        debug = direction.clone();
 
-        if(/*(Math.abs(power) > 0.2||localizer.speed>0.015) && */(Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
+        if((Math.abs(power) > 0.2||localizer.speed>0.015) && (Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
         {
             controller.setVec(direction, 1.0, true, 3.0, localizer.pos.r);
             return false;
