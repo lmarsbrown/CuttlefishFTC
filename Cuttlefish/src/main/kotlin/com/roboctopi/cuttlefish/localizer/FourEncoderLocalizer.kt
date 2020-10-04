@@ -1,25 +1,38 @@
 package com.roboctopi.cuttlefish.localizer
 
 import com.roboctopi.cuttlefish.components.RotaryEncoder
+import com.roboctopi.cuttlefish.utils.Matrix
 import com.roboctopi.cuttlefish.utils.Pose
 
-class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEncoder, wheelRad: Double, wheelDist:Double,rotaryCalibrationConstant:Double): Localizer{
+class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryEncoder,forwardOffset:Pose,back:RotaryEncoder,backOffset:Pose, right: RotaryEncoder,rightOffset:Pose, wheelRad: Double, rotaryCalibrationConstant:Double): Localizer{
 
     //Var init
     val l: RotaryEncoder = left;
-    val s: RotaryEncoder = side;
+    val f: RotaryEncoder = forward;
+    val b: RotaryEncoder = back;
     val r: RotaryEncoder = right;
+
+    var lOffMulti:Double = 0.0;
+    var fOffMulti:Double = 0.0;
+    var bOffMulti:Double = 0.0;
+    var rOffMulti:Double = 0.0;
+
+    val dist = rightOffset.x-leftOffset.x;
+
+
+
+
+
 
     val calibConst = rotaryCalibrationConstant;
 
     var rad:Double = wheelRad;
-    var dist:Double = wheelDist;
 
     //Position var
     override var pos: Pose = Pose(0.0,0.0,0.0);
 
     //Preivious Enc Position
-    var pEnc: Pose = Pose(l.getRotation(),r.getRotation(),s.getRotation());
+    var pEnc: Matrix = Matrix(1,4);
 
     //Privious position
     private  var pPos:Pose = Pose(0.0,0.0,0.0);
@@ -31,7 +44,28 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
     override var speed = 0.0;
 
     init {
+        pEnc.set(arrayOf(l.getRotation(),f.getRotation(),b.getRotation(),r.getRotation()));
         this.relocalize();
+
+        val lOff: Pose = leftOffset;
+        val fOff: Pose = forwardOffset;
+        val bOff: Pose = backOffset;
+        val rOff: Pose = rightOffset;
+
+        lOff.normalize();
+        lOffMulti = 1/lOff.x;
+
+        fOff.normalize();
+        fOffMulti = 1/lOff.y;
+
+        bOff.normalize();
+        bOffMulti = 1/lOff.y;
+
+        rOff.normalize();
+        rOffMulti = 1/lOff.x;
+
+
+
     }
 
 
@@ -39,11 +73,12 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
     override fun relocalize()
     {
         //Gets enc position
-        var nEnc:Pose = Pose(l.getRotation(),r.getRotation(),s.getRotation());
+        var nEnc:Matrix = Matrix(1,4);
+        nEnc.set(arrayOf(l.getRotation(),f.getRotation(),b.getRotation(),r.getRotation()));
 
         //Encoder step
-        var encStep: Pose = nEnc.clone();
-        encStep.subtract(this.pEnc,true);
+        var encStep: Matrix = nEnc.clone();
+        encStep.subtract(this.pEnc);
 
         //Movement step
         var moveStep:Pose = this.calcMovementStep(encStep);
@@ -70,13 +105,6 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
         //Sets previous variables
         pTime = t;
         pPos = this.pos.clone();
-
-
-        this.pEnc.x = nEnc.x;
-        this.pEnc.y = nEnc.y;
-        this.pEnc.r = nEnc.r;
-
-
     }
 
     //Magic black box
@@ -100,22 +128,25 @@ class EncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEn
         return newPos;
     }
 
-    private fun calcMovementStep(encStep:Pose):Pose
+    private fun calcMovementStep(encStep:Matrix):Pose
     {
         //Var init
         var step:Pose = Pose(0.0,0.0,0.0);
 
         //Converts rotation into distance traveled
-        encStep.scale(this.rad,true);
+        encStep.scale(this.rad);
 
         //Forward motion
-        step.y = 0.5*(encStep.x+encStep.y);
+        step.y = 0.5*(encStep.getItem(0,0)+encStep.getItem(0,3));
+
+
 
         //Rotational motion
-        step.r = (encStep.y-encStep.x)/this.dist;
+        step.r = (encStep.getItem(0,0)*lOffMulti-encStep.getItem(0,3)*rOffMulti)/this.dist;
+
 
         //Sideways motion
-        step.x = encStep.r;
+        step.x = 0.5*(encStep.getItem(0,1)+encStep.getItem(0,2));
 
 
 

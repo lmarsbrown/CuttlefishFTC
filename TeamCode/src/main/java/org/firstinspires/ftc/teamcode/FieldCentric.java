@@ -39,7 +39,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.localizer.EncoderLocalizer;
+import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
@@ -64,9 +64,9 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Telemetry IMU", group="Iterative Opmode")
+@TeleOp(name="Field-Centric", group="Iterative Opmode")
 //@Disabled
-public class TemplateCopy extends OpMode
+public class FieldCentric extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -74,7 +74,7 @@ public class TemplateCopy extends OpMode
     private DcMotor rightFront;
     private DcMotor leftBack;
     private DcMotor rightBack;
-    private EncoderLocalizer localizer;
+    private ThreeEncoderLocalizer localizer;
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
@@ -109,7 +109,7 @@ public class TemplateCopy extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new EncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
+        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
 
