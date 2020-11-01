@@ -29,7 +29,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -38,8 +39,14 @@ import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
 import com.roboctopi.cuttlefish.localizer.FourEncoderLocalizer;
+import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
 
@@ -57,9 +64,9 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="4enctest", group="Iterative Opmode")
+@TeleOp(name="EncSlipTest", group="Iterative Opmode")
 //@Disabled
-public class FourEncTest extends OpMode
+public class EncSlipTest extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -71,14 +78,23 @@ public class FourEncTest extends OpMode
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
+    private double pRoteIMU = 0;
+    private double pRoteEnc = 0;
+    long pTime = System.currentTimeMillis();
+
+
+    // The IMU sensor object
+    BNO055IMU imu;
+
+    // State used for updating telemetry
+    Orientation angles;
+    Acceleration gravity;
 
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
-        telemetry.addData("Status", "Initialized");
-
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
@@ -95,9 +111,23 @@ public class FourEncTest extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new FourEncoderLocalizer(new Encoder(leftFront,8192),new Pose(-174,45,0),new Encoder(rightFront,8192),new Pose(170,74,0),new Encoder(leftBack,8192),new Pose(-170,-74,0), new Encoder(rightBack,8192),new Pose(174,-45,0),36,1.00175306787);
+        localizer = new FourEncoderLocalizer(new Encoder(leftFront,8192),new Pose(-174,45,0),new Encoder(rightFront,8192),new Pose(170,74,0),new Encoder(leftBack,8192),new Pose(-170,-74,0), new Encoder(rightBack,8192),new Pose(174,-45,0),36,1.00175306787);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+        // and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
     }
 
     /*
@@ -113,8 +143,17 @@ public class FourEncTest extends OpMode
     @Override
     public void start() {
         runtime.reset();
-        queue.pause();
+        //queue.pause();
+//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 1000, 0.5*Math.PI)),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 1000, 1*Math.PI)),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 0, 1.5*Math.PI)),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 0, 2*Math.PI)),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 1000, 0.5*Math.PI), Math.PI*2, 250, true),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 1000, 1*Math.PI), Math.PI*2, 250, true),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 0, 1.5*Math.PI), Math.PI*2, 250, true),ptp));
+//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 0, 2*Math.PI)),ptp));
     }
+
 
     /*
      * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
@@ -123,14 +162,31 @@ public class FourEncTest extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
-        Pose dir = new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x);
-        dir.rotate(-localizer.getPos().getR(),new Pose(0,0,0));
-        mecController.setVec(dir,1,false,0,0);
-
-        telemetry.addData("X", localizer.getPos().getX());
-        telemetry.addData("Y", localizer.getPos().getY());
-        telemetry.addData("R", localizer.getPos().getR()/(Math.PI*2));
         telemetry.update();
+        telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+
+        //Gets time the last step took
+        long t = System.currentTimeMillis();
+        long dTime = t - pTime;
+
+
+        double dRoteIMU = (angles.firstAngle - pRoteIMU)%360;
+        double dRoteEnc = (localizer.getPos().getR() - pRoteEnc)%360;
+
+        double RoteIMUSpeed = dRoteIMU / dTime;
+        double RoteEncSpeed = (180*dRoteEnc/Math.PI) / dTime;
+
+        pRoteIMU = angles.firstAngle;
+        pRoteEnc = localizer.getPos().getR();
+        telemetry.addData("dRoteIMU",RoteIMUSpeed);
+        telemetry.addData("dRoteEnc",RoteEncSpeed);
+        telemetry.addData("Ratio",(RoteEncSpeed+0.00001)/(RoteIMUSpeed+0.00001));
+
+
+        //Sets previous variables
+        pTime = t;
     }
 
     /*

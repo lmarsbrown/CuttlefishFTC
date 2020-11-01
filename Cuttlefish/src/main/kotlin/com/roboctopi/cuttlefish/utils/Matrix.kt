@@ -48,7 +48,7 @@ class Matrix(var width:Int,var height:Int,init:(Int)->Double = {i-> 0.0}){
         {
             for(x in 0 until this.width)
             {
-                this.setItem(x,y,this.getItem(x,y)+input.getItem(x,y));
+                this.setItem(x,y,this.getItem(x,y)-input.getItem(x,y));
             }
         }
     }
@@ -70,11 +70,13 @@ class Matrix(var width:Int,var height:Int,init:(Int)->Double = {i-> 0.0}){
         var out = "";
         for(y in 0 until this.height)
         {
+            out += "[";
             for(x in 0 until this.width)
             {
-                out += this.getItem(x,y).toString()+" ";
+                out += this.getItem(x,y).toString()+", ";
             }
-            out += "\n";
+            out = out.removeSuffix(", ");
+            out += "]\n";
         }
         println(out);
     }

@@ -149,6 +149,7 @@ public class goodlyname extends OpMode
         telemetry.update();
         telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
         angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
         telemetry.addData("angle 1::", angles.firstAngle);
         telemetry.addData("angle 2::", angles.secondAngle);
         telemetry.addData("angle 3::", angles.thirdAngle);

@@ -3,6 +3,7 @@ package com.roboctopi.cuttlefish.localizer
 import com.roboctopi.cuttlefish.components.RotaryEncoder
 import com.roboctopi.cuttlefish.utils.Matrix
 import com.roboctopi.cuttlefish.utils.Pose
+import kotlin.math.abs
 
 class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryEncoder,forwardOffset:Pose,back:RotaryEncoder,backOffset:Pose, right: RotaryEncoder,rightOffset:Pose, wheelRad: Double, rotaryCalibrationConstant:Double): Localizer{
 
@@ -17,7 +18,8 @@ class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryE
     var bOffMulti:Double = 0.0;
     var rOffMulti:Double = 0.0;
 
-    val dist = rightOffset.x-leftOffset.x;
+    val fDist = rightOffset.x-leftOffset.x;
+    val sDist = forwardOffset.x-backOffset.x;
 
 
 
@@ -31,10 +33,10 @@ class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryE
     //Position var
     override var pos: Pose = Pose(0.0,0.0,0.0);
 
-    //Preivious Enc Position
+    //Previous Enc Position
     var pEnc: Matrix = Matrix(1,4);
 
-    //Privious position
+    //Previous position
     private  var pPos:Pose = Pose(0.0,0.0,0.0);
 
     //Previous time
@@ -53,16 +55,18 @@ class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryE
         val rOff: Pose = rightOffset;
 
         lOff.normalize();
-        lOffMulti = 1/lOff.x;
+        lOffMulti = abs(1/lOff.x);
 
         fOff.normalize();
-        fOffMulti = 1/lOff.y;
+        fOffMulti = abs(1/fOff.y);
 
         bOff.normalize();
-        bOffMulti = 1/lOff.y;
+        bOffMulti = abs(1/bOff.y);
 
         rOff.normalize();
-        rOffMulti = 1/lOff.x;
+        rOffMulti = abs(1/rOff.x);
+
+
 
 
 
@@ -105,6 +109,7 @@ class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryE
         //Sets previous variables
         pTime = t;
         pPos = this.pos.clone();
+        this.pEnc = nEnc;
     }
 
     //Magic black box
@@ -142,7 +147,7 @@ class FourEncoderLocalizer(left: RotaryEncoder,leftOffset:Pose, forward: RotaryE
 
 
         //Rotational motion
-        step.r = (encStep.getItem(0,0)*lOffMulti-encStep.getItem(0,3)*rOffMulti)/this.dist;
+        step.r = ((encStep.getItem(0,0)*lOffMulti-encStep.getItem(0,3)*rOffMulti)/this.fDist)+((encStep.getItem(0,1)*fOffMulti-encStep.getItem(0,2)*bOffMulti)/this.sDist);
 
 
         //Sideways motion

@@ -1,6 +1,5 @@
 package com.roboctopi.cuttlefish.controller
 
-import com.roboctopi.cuttlefish.localizer.EncoderLocalizer
 import com.roboctopi.cuttlefish.localizer.Localizer
 import com.roboctopi.cuttlefish.localizer.NullLocalizer
 import com.roboctopi.cuttlefish.utils.PID
