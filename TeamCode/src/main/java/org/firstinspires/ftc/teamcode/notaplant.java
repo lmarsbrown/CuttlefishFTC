@@ -56,16 +56,13 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
-@Disabled
+@TeleOp(name="motor test", group="Iterative Opmode")
+//@Disabled
 public class notaplant extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftFront;
-    private DcMotor rightFront;
-    private DcMotor leftBack;
-    private DcMotor rightBack;
+
     private DcMotor launcherMotor1;
     private DcMotor launcherMotor2;
     private EncoderLocalizer localizer;
@@ -83,24 +80,17 @@ public class notaplant extends OpMode
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
-        leftBack  = hardwareMap.get(DcMotor.class, "left_back");
-        rightBack = hardwareMap.get(DcMotor.class, "right_back");
-        rightFront = hardwareMap.get(DcMotor.class, "right_front");
-        leftFront = hardwareMap.get(DcMotor.class, "left_front");
 
-        launcherMotor1 = hardwareMap.get(DcMotor.class, "launcher_motor_1");
-        launcherMotor2 = hardwareMap.get(DcMotor.class, "launcher_motor_2");
+
+        launcherMotor1 = hardwareMap.get(DcMotor.class, "launcherMotor1");
+        launcherMotor2 = hardwareMap.get(DcMotor.class, "launcherMotor2");
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
+
 
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new EncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
-        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
-        ptp = new PTPController(mecController,localizer);
     }
 
     /*
@@ -124,11 +114,11 @@ public class notaplant extends OpMode
      */
     @Override
     public void loop() {
-        localizer.relocalize();
-        queue.update();
+
+
         telemetry.update();
-        launcherMotor1.setPower(0.1);
-        launcherMotor2.setPower(0.1);
+        launcherMotor1.setPower(0.5);
+        launcherMotor2.setPower(0.5);
     }
 
     /*
