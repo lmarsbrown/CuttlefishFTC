@@ -101,7 +101,7 @@ class ThreeEncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: Rot
 
 
         //Investigate newPos
-        localArc.rotate(transDir+newPos.r);
+        localArc.rotate(transDir+cPos.r);
 
         newPos.add(localArc);
 
