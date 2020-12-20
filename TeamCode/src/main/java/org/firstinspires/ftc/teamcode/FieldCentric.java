@@ -49,6 +49,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
+import org.firstinspires.ftc.teamcode.wrappers.LockedEncoder;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -109,8 +110,11 @@ public class FieldCentric extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
-        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
+        //localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,8192),new Encoder(leftFront,8192),new Encoder(rightFront,8192),36,320,1);
+
+
+        localizer  = new ThreeEncoderLocalizer(new Encoder(rightFront,8192),new Encoder(leftBack,8192),new Encoder(leftFront,8192),36,320,1);
+        mecController = new MecanumController(new FTCMotor(leftFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
@@ -154,12 +158,20 @@ public class FieldCentric extends OpMode
         localizer.relocalize();
         queue.update();
         telemetry.update();
-        telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
+        telemetry.addData("Pose","x: "+localizer.getPos().getX()+", y: "+localizer.getPos().getY()+", r: "+localizer.getPos().getR());
+        telemetry.addData("Encoder Values","x: "+localizer.getS().getRotation()+", y1: "+localizer.getL().getRotation()+", y2: "+localizer.getR().getRotation());
         angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         telemetry.addData("angle 1::", angles.firstAngle);
         Pose direction = new Pose(gamepad1.left_stick_x, -gamepad1.left_stick_y,-gamepad1.right_stick_x);
         direction.rotate(-angles.firstAngle*(Math.PI/180),new Pose(0.0, 0.0, 0.0));
-        mecController.setVec(direction, 1, false, 0, 0);
+        if(gamepad1.left_bumper)
+        {
+            mecController.setVec(direction, 0.3, false, 0, 0);
+        }
+        else
+        {
+            mecController.setVec(direction, 1, false, 0, 0);
+        }
     }
 
     /*

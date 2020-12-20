@@ -62,7 +62,7 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  */
 
 @Autonomous(name="Auto Test", group="Iterative Opmode")
-//@Disabled
+@Disabled
 public class AutoTest extends OpMode
 {
     // Declare OpMode members.
@@ -99,7 +99,7 @@ public class AutoTest extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
+        localizer  = new ThreeEncoderLocalizer(new Encoder(rightFront,2400),new Encoder(leftBack,2400),new Encoder(leftFront,2400),36,340,0.5);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
     }

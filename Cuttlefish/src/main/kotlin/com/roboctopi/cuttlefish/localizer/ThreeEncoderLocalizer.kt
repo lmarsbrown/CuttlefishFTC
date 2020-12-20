@@ -2,6 +2,7 @@ package com.roboctopi.cuttlefish.localizer
 
 import com.roboctopi.cuttlefish.components.RotaryEncoder
 import com.roboctopi.cuttlefish.utils.Pose
+import kotlin.contracts.contract
 
 class ThreeEncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: RotaryEncoder, wheelRad: Double, wheelDist:Double,rotaryCalibrationConstant:Double): Localizer{
 
@@ -14,6 +15,10 @@ class ThreeEncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: Rot
 
     var rad:Double = wheelRad;
     var dist:Double = wheelDist;
+
+    private var sumx = 0.0;
+    private var sumx2 = 0.0;
+
 
     //Position var
     override var pos: Pose = Pose(0.0,0.0,0.0);
@@ -88,11 +93,14 @@ class ThreeEncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: Rot
 
         var d = step.getVecLen();
         var a = step.r;
-        if(a == 0.0)a = 0.00001;
+        if(a == 0.0)a = 0.000000000000001;
         var r = d/a;
 
+        //Investigate first term *r
         var localArc:Pose = Pose(Math.cos(0.5*Math.PI-a)*r,Math.sin(0.5*Math.PI-a)*r-r);
 
+
+        //Investigate newPos
         localArc.rotate(transDir+newPos.r);
 
         newPos.add(localArc);

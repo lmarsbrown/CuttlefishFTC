@@ -21,6 +21,7 @@ class Pose {
     {
         var n = Pose(this.x, this.y, this.r);
         return n;
+
     }
     fun add(input: Pose, rotate:Boolean = false)
     {
