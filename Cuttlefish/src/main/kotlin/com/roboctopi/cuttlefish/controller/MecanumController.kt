@@ -11,7 +11,7 @@ class MecanumController{
     var rbm:Motor = NullMotor();
     var lfm:Motor = NullMotor();
     var lbm:Motor = NullMotor();
-    var rPID = PID(Math.PI*0.5,0.1,2.0);
+    var rPID = PID(Math.PI*0.5,0.15,2.0);
     var rote:Double = 0.0;
     var debug:Double = 0.0;
 

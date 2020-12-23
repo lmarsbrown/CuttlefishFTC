@@ -27,17 +27,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.submaring;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.localizer.FourEncoderLocalizer;
+import com.roboctopi.cuttlefish.controller.Waypoint;
+import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
@@ -57,9 +59,9 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="4enctest", group="Iterative Opmode")
-//@Disabled
-public class FourEncTest extends OpMode
+@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
+@Disabled
+public class Template extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -67,7 +69,7 @@ public class FourEncTest extends OpMode
     private DcMotor rightFront;
     private DcMotor leftBack;
     private DcMotor rightBack;
-    private FourEncoderLocalizer localizer;
+    private ThreeEncoderLocalizer localizer;
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
@@ -95,7 +97,7 @@ public class FourEncTest extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new FourEncoderLocalizer(new Encoder(leftFront,8192),new Pose(-174,45,0),new Encoder(rightFront,8192),new Pose(170,74,0),new Encoder(leftBack,8192),new Pose(-170,-74,0), new Encoder(rightBack,8192),new Pose(174,-45,0),36,1.00175306787);
+        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
     }
@@ -123,13 +125,6 @@ public class FourEncTest extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
-        Pose dir = new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x);
-        dir.rotate(-localizer.getPos().getR(),new Pose(0,0,0));
-        mecController.setVec(dir,1,false,0,0);
-
-        telemetry.addData("X", localizer.getPos().getX());
-        telemetry.addData("Y", localizer.getPos().getY());
-        telemetry.addData("R", localizer.getPos().getR()/(Math.PI*2));
         telemetry.update();
     }
 

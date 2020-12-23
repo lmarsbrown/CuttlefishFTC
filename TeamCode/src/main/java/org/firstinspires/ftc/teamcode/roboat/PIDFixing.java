@@ -27,29 +27,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.roboat;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
+import com.roboctopi.cuttlefish.controller.Waypoint;
 import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
-import org.firstinspires.ftc.teamcode.wrappers.LockedEncoder;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -65,9 +61,9 @@ import org.firstinspires.ftc.teamcode.wrappers.LockedEncoder;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Field-Centric", group="Iterative Opmode")
+@TeleOp(name="PID", group="Iterative Opmode")
 //@Disabled
-public class FieldCentric extends OpMode
+public class PIDFixing extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -79,13 +75,6 @@ public class FieldCentric extends OpMode
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
-
-    // The IMU sensor object
-    BNO055IMU imu;
-
-    // State used for updating telemetry
-    Orientation angles;
-    Acceleration gravity;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -110,29 +99,10 @@ public class FieldCentric extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        //localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,8192),new Encoder(leftFront,8192),new Encoder(rightFront,8192),36,320,1);
-
-
-        localizer  = new ThreeEncoderLocalizer(new Encoder(rightFront,8192),new Encoder(leftBack,8192),new Encoder(leftFront,8192),36,320,1);
-        mecController = new MecanumController(new FTCMotor(leftFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
+        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
+        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
-
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
-        parameters.loggingEnabled      = true;
-        parameters.loggingTag          = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-        // and named "imu".
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
     }
-
-
 
     /*
      * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
@@ -147,7 +117,8 @@ public class FieldCentric extends OpMode
     @Override
     public void start() {
         runtime.reset();
-        queue.pause();
+        //queue.pause();
+        queue.addTask(new PointTask(new Waypoint(new Pose(0.0,500.0,Math.PI)),ptp));
     }
 
     /*
@@ -157,21 +128,14 @@ public class FieldCentric extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry tele = dashboard.getTelemetry();
+        tele.addData("p",mecController.getRPID().getP());
+        tele.addData("i",mecController.getRPID().getI());
+        tele.addData("d",mecController.getRPID().getD());
+        tele.addData("power",mecController.getRPID().getPower());
+        tele.update();
         telemetry.update();
-        telemetry.addData("Pose","x: "+localizer.getPos().getX()+", y: "+localizer.getPos().getY()+", r: "+localizer.getPos().getR());
-        telemetry.addData("Encoder Values","x: "+localizer.getS().getRotation()+", y1: "+localizer.getL().getRotation()+", y2: "+localizer.getR().getRotation());
-        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        telemetry.addData("angle 1::", angles.firstAngle);
-        Pose direction = new Pose(gamepad1.left_stick_x, -gamepad1.left_stick_y,-gamepad1.right_stick_x);
-        direction.rotate(-angles.firstAngle*(Math.PI/180),new Pose(0.0, 0.0, 0.0));
-        if(gamepad1.left_bumper)
-        {
-            mecController.setVec(direction, 0.3, false, 0, 0);
-        }
-        else
-        {
-            mecController.setVec(direction, 1, false, 0, 0);
-        }
     }
 
     /*

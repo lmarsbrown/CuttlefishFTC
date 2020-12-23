@@ -27,19 +27,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.submaring;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.controller.Waypoint;
 import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
@@ -50,6 +49,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
+import org.firstinspires.ftc.teamcode.wrappers.LockedEncoder;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -65,9 +65,9 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Advanced: Iterative OpMode", group="Iterative Opmode")
+@TeleOp(name="Field-Centric", group="Iterative Opmode")
 //@Disabled
-public class goodlyname extends OpMode
+public class FieldCentric extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -79,7 +79,6 @@ public class goodlyname extends OpMode
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
-
 
     // The IMU sensor object
     BNO055IMU imu;
@@ -93,6 +92,8 @@ public class goodlyname extends OpMode
      */
     @Override
     public void init() {
+        telemetry.addData("Status", "Initialized");
+
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
@@ -109,10 +110,29 @@ public class goodlyname extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
-        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
+        //localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,8192),new Encoder(leftFront,8192),new Encoder(rightFront,8192),36,320,1);
+
+
+        localizer  = new ThreeEncoderLocalizer(new Encoder(rightFront,8192),new Encoder(leftBack,8192),new Encoder(leftFront,8192),36,320,1);
+        mecController = new MecanumController(new FTCMotor(leftFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+        // and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
     }
+
+
 
     /*
      * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
@@ -127,17 +147,8 @@ public class goodlyname extends OpMode
     @Override
     public void start() {
         runtime.reset();
-        //queue.pause();
-//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 1000, 0.5*Math.PI)),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 1000, 1*Math.PI)),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 0, 1.5*Math.PI)),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 0, 2*Math.PI)),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 1000, 0.5*Math.PI), Math.PI*2, 250, true),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 1000, 1*Math.PI), Math.PI*2, 250, true),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(1000, 0, 1.5*Math.PI), Math.PI*2, 250, true),ptp));
-//        queue.addTask(new PointTask(new Waypoint(new Pose(0, 0, 2*Math.PI)),ptp));
+        queue.pause();
     }
-
 
     /*
      * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
@@ -147,12 +158,20 @@ public class goodlyname extends OpMode
         localizer.relocalize();
         queue.update();
         telemetry.update();
-        telemetry.addData("Debug:::::",ptp.getDebug().getX()+" "+ptp.getDebug().getY()+" "+ptp.getDebug().getR());
+        telemetry.addData("Pose","x: "+localizer.getPos().getX()+", y: "+localizer.getPos().getY()+", r: "+localizer.getPos().getR());
+        telemetry.addData("Encoder Values","x: "+localizer.getS().getRotation()+", y1: "+localizer.getL().getRotation()+", y2: "+localizer.getR().getRotation());
         angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
         telemetry.addData("angle 1::", angles.firstAngle);
-        telemetry.addData("angle 2::", angles.secondAngle);
-        telemetry.addData("angle 3::", angles.thirdAngle);
+        Pose direction = new Pose(gamepad1.left_stick_x, -gamepad1.left_stick_y,-gamepad1.right_stick_x);
+        direction.rotate(-angles.firstAngle*(Math.PI/180),new Pose(0.0, 0.0, 0.0));
+        if(gamepad1.left_bumper)
+        {
+            mecController.setVec(direction, 0.3, false, 0, 0);
+        }
+        else
+        {
+            mecController.setVec(direction, 1, false, 0, 0);
+        }
     }
 
     /*

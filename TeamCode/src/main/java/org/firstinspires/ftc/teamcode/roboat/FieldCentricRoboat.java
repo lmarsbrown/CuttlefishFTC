@@ -27,23 +27,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.roboat;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.roboctopi.cuttlefish.Queue.DelayTask;
-import com.roboctopi.cuttlefish.Queue.PointTask;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.controller.Waypoint;
 import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
 import com.roboctopi.cuttlefish.utils.Pose;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
 
@@ -61,9 +63,9 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Auto Test", group="Iterative Opmode")
-@Disabled
-public class AutoTest extends OpMode
+@TeleOp(name="FieldCentricRoboat", group="Iterative Opmode")
+//@Disabled
+public class FieldCentricRoboat extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
@@ -74,6 +76,8 @@ public class AutoTest extends OpMode
     private ThreeEncoderLocalizer localizer;
     private MecanumController mecController;
     private PTPController ptp;
+    BNO055IMU imu;
+    Orientation angles;
     private TaskQueue queue = new TaskQueue();
 
     /*
@@ -99,9 +103,20 @@ public class AutoTest extends OpMode
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new ThreeEncoderLocalizer(new Encoder(rightFront,2400),new Encoder(leftBack,2400),new Encoder(leftFront,2400),36,340,0.5);
+        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
         mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
         ptp = new PTPController(mecController,localizer);
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
     }
 
     /*
@@ -117,10 +132,7 @@ public class AutoTest extends OpMode
     @Override
     public void start() {
         runtime.reset();
-        queue.addTask(new PointTask(new Waypoint( new Pose(500,500,0) , Math.PI*2,200,true ),ptp));
-        queue.addTask(new PointTask(new Waypoint( new Pose(0,1000,0) , 0.05,10,false ),ptp));
-        queue.addTask(new DelayTask(2000));
-        queue.addTask(new PointTask(new Waypoint( new Pose(0,0,Math.PI*0.5) , 0.05,10,false ),ptp));
+        queue.pause();
     }
 
     /*
@@ -130,14 +142,21 @@ public class AutoTest extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
-
-        telemetry.addData("X",localizer.getPos().getX());
-        telemetry.addData("Y",localizer.getPos().getY());
-        telemetry.addData("R",localizer.getPos().getR());
-        telemetry.addData("Debug",mecController.getDebug());
-        telemetry.addData("Err",Math.abs(localizer.getPos().getR()-Math.PI*0.5));
-
         telemetry.update();
+        telemetry.addData("Pose","x: "+localizer.getPos().getX()+", y: "+localizer.getPos().getY()+", r: "+localizer.getPos().getR());
+        telemetry.addData("Encoder Values","x: "+localizer.getS().getRotation()+", y1: "+localizer.getL().getRotation()+", y2: "+localizer.getR().getRotation());
+        angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        telemetry.addData("angle 1::", angles.firstAngle);
+        Pose direction = new Pose(gamepad1.left_stick_x, -gamepad1.left_stick_y,-gamepad1.right_stick_x);
+        direction.rotate(-angles.firstAngle*(Math.PI/180),new Pose(0.0, 0.0, 0.0));
+        if(gamepad1.left_bumper)
+        {
+            mecController.setVec(direction, 0.3, false, 0, 0);
+        }
+        else
+        {
+            mecController.setVec(direction, 1, false, 0, 0);
+        }
     }
 
     /*

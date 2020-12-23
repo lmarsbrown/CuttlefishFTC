@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.submaring.tests;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -37,7 +37,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.roboctopi.cuttlefish.Queue.TaskQueue;
 import com.roboctopi.cuttlefish.controller.MecanumController;
 import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.localizer.ThreeEncoderLocalizer;
+import com.roboctopi.cuttlefish.localizer.FourEncoderLocalizer;
+import com.roboctopi.cuttlefish.utils.Pose;
 
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
@@ -56,16 +57,17 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="kelpmode", group="Iterative Opmode")
+@TeleOp(name="4enctest", group="Iterative Opmode")
 //@Disabled
-public class Enctest extends OpMode
+public class FourEncTest extends OpMode
 {
     // Declare OpMode members.
     private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor leftFront;
     private DcMotor rightFront;
     private DcMotor leftBack;
     private DcMotor rightBack;
-    private ThreeEncoderLocalizer localizer;
+    private FourEncoderLocalizer localizer;
     private MecanumController mecController;
     private PTPController ptp;
     private TaskQueue queue = new TaskQueue();
@@ -83,16 +85,19 @@ public class Enctest extends OpMode
         leftBack  = hardwareMap.get(DcMotor.class, "left_back");
         rightBack = hardwareMap.get(DcMotor.class, "right_back");
         rightFront = hardwareMap.get(DcMotor.class, "right_front");
+        leftFront = hardwareMap.get(DcMotor.class, "left_front");
 
         // Most robots need the motor on one side to be reversed to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
-        rightFront.setDirection(DcMotor.Direction.REVERSE);
-        //leftBack.setDirection(DcMotor.Direction.REVERSE);
+        leftFront.setDirection(DcMotor.Direction.REVERSE);
+        leftBack.setDirection(DcMotor.Direction.REVERSE);
 
         // Tell the driver that initialization is complete.
         telemetry.addData("Status", "Initialized");
 
-        localizer  = new ThreeEncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
+        localizer  = new FourEncoderLocalizer(new Encoder(leftFront,8192),new Pose(-174,45,0),new Encoder(rightFront,8192),new Pose(170,74,0),new Encoder(leftBack,8192),new Pose(-170,-74,0), new Encoder(rightBack,8192),new Pose(174,-45,0),36,1.00175306787);
+        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
+        ptp = new PTPController(mecController,localizer);
     }
 
     /*
@@ -118,12 +123,13 @@ public class Enctest extends OpMode
     public void loop() {
         localizer.relocalize();
         queue.update();
-        telemetry.addData("l enc",localizer.getL().getRotation());
-        telemetry.addData("r enc",localizer.getR().getRotation());
-        telemetry.addData("s enc",localizer.getS().getRotation());
-        telemetry.addData("x",localizer.getPos().getX());
-        telemetry.addData("y",localizer.getPos().getY());
-        telemetry.addData("r",localizer.getPos().getR());
+        Pose dir = new Pose(gamepad1.left_stick_x,-gamepad1.left_stick_y,-gamepad1.right_stick_x);
+        dir.rotate(-localizer.getPos().getR(),new Pose(0,0,0));
+        mecController.setVec(dir,1,false,0,0);
+
+        telemetry.addData("X", localizer.getPos().getX());
+        telemetry.addData("Y", localizer.getPos().getY());
+        telemetry.addData("R", localizer.getPos().getR()/(Math.PI*2));
         telemetry.update();
     }
 

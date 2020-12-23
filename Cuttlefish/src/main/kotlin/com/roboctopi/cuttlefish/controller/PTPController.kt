@@ -48,7 +48,8 @@ class PTPController
         direction.scale(power,false);
         debug = direction.clone();
 
-        if((Math.abs(power) > 0.2||localizer.speed>0.015) && (Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
+       // if((Math.abs(power) > 0.2||localizer.speed>0.015) &&(Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
+        if((Math.abs(power) > 0.2||localizer.speed>0.005||Math.abs(controller.rPID.power)>0.1) && (Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
         {
             controller.setVec(direction, 1.0, true, 3.0, localizer.pos.r);
             return false;
