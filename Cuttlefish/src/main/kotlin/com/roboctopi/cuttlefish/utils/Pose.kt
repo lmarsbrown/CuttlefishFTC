@@ -1,5 +1,6 @@
 package com.roboctopi.cuttlefish.utils
 
+import com.roboctopi.cuttlefish.components.Motor
 
 
 class Pose {

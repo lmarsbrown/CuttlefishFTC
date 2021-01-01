@@ -13,16 +13,17 @@ class MecanumController{
     var lbm:Motor = NullMotor();
     var rPID = PID(Math.PI*0.5,0.15,2.0);
     var rote:Double = 0.0;
-    var debug:Double = 0.0;
+    var roteAntiStallThreshhold = 0.11;
 
     constructor(){}
-    constructor(rightFront: Motor, rightBack: Motor, leftFront: Motor,leftBack: Motor, rotePID:PID)
+    constructor(rightFront: Motor, rightBack: Motor, leftFront: Motor,leftBack: Motor, rotePID:PID,roteAntiStallThreshhold: Double)
     {
         rfm = rightFront;
         rbm = rightBack;
         lfm = leftFront;
         lbm = leftBack;
         rPID = rotePID;
+        this.roteAntiStallThreshhold = roteAntiStallThreshhold;
     }
     constructor(rightFront: Motor, rightBack: Motor, leftFront: Motor,leftBack: Motor)
     {
@@ -46,9 +47,9 @@ class MecanumController{
         {
             rote = direction.r;
             rPID.update(rotation,rote);
-            debug = rPID.debug;
             var r = Math.min(rPID.power,maxRotationPriority);
-            if(Math.abs(r) < 0.11) r = 0.0;
+            if(Math.abs(r) < roteAntiStallThreshhold) r = 0.0;
+
             var scale:Double = Math.min(power/(Math.abs(direction.x)+Math.abs(direction.y)+Math.abs(r)),1.0);
             lfm.setPower((-direction.y-direction.x+r)*scale);
             rfm.setPower((-direction.y+direction.x-r)*scale);

@@ -16,9 +16,6 @@ class ThreeEncoderLocalizer(left: RotaryEncoder, side: RotaryEncoder, right: Rot
     var rad:Double = wheelRad;
     var dist:Double = wheelDist;
 
-    private var sumx = 0.0;
-    private var sumx2 = 0.0;
-
 
     //Position var
     override var pos: Pose = Pose(0.0,0.0,0.0);
