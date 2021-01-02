@@ -5,23 +5,23 @@ class PID(p:Double, i:Double, d:Double, initial: Double = 0.0) {
     private var iGain: Double = i;
     private var dGain: Double = d;
     private var pErr: Double = initial;
-    private var i:Double = 0.0;
+    var p:Double = 0.0;
+    var i:Double = 0.0;
+    var d:Double = 0.0;
     public var power:Double = 0.0;
     private var pTime:Long = System.currentTimeMillis();
-    public var debug:Double = 0.0;
 
     fun update(state: Double, goal: Double = 0.0): Double
     {
-        var p = goal - state;
+        p = goal - state;
 
         var t = System.currentTimeMillis();
 
-        //TODO: I might be broken if not its in D because its an issue with pid
-        i += iGain*p*0.1/**((t-pTime).toDouble()/1000)*/;
-        i = Math.min(i,1.0);
-        debug = i ;
-        var d = (p-pErr)/(t-pTime);
-        power = pGain*p+/*i+*/d*dGain;
+        i += iGain*p*0.1*((t-pTime).toDouble()/1000);
+        i = Math.max(Math.min(i,1.0),-1.0);
+        d = (p-pErr)/(t-pTime);
+        power = pGain*p+i+d*dGain;
+
         pErr = p;
         pTime = t;
         return power;

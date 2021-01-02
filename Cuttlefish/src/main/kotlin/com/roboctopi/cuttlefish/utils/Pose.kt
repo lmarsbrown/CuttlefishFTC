@@ -1,5 +1,6 @@
 package com.roboctopi.cuttlefish.utils
 
+import com.roboctopi.cuttlefish.components.Motor
 
 
 class Pose {
@@ -21,6 +22,7 @@ class Pose {
     {
         var n = Pose(this.x, this.y, this.r);
         return n;
+
     }
     fun add(input: Pose, rotate:Boolean = false)
     {

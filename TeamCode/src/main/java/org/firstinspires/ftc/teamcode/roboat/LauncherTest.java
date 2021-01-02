@@ -27,21 +27,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.roboat;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.roboctopi.cuttlefish.Queue.PointTask;
-import com.roboctopi.cuttlefish.Queue.TaskQueue;
-import com.roboctopi.cuttlefish.controller.MecanumController;
-import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.controller.Waypoint;
-import com.roboctopi.cuttlefish.localizer.EncoderLocalizer;
-import com.roboctopi.cuttlefish.utils.Pose;
+import com.qualcomm.robotcore.robocol.TelemetryMessage;
+import com.roboctopi.cuttlefish.Queue.MotorVelocityTask;
+import com.roboctopi.cuttlefish.components.Motor;
+import com.roboctopi.cuttlefish.utils.PID;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.config.RoboatConfig;
+import org.firstinspires.ftc.teamcode.config.Robot;
 import org.firstinspires.ftc.teamcode.wrappers.Encoder;
 import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
 
@@ -59,80 +59,47 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Basic: Iterative OpMode", group="Iterative Opmode")
-@Disabled
-public class Template extends OpMode
+@TeleOp(name="LauncherTest", group="Iterative Opmode")
+//@Disabled
+public class LauncherTest extends OpMode
 {
-    // Declare OpMode members.
-    private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor leftFront;
-    private DcMotor rightFront;
-    private DcMotor leftBack;
-    private DcMotor rightBack;
-    private EncoderLocalizer localizer;
-    private MecanumController mecController;
-    private PTPController ptp;
-    private TaskQueue queue = new TaskQueue();
-
-    /*
-     * Code to run ONCE when the driver hits INIT
-     */
+    Robot robot;
+    FTCMotor launcher;
+    Encoder launcherEncoder;
+    MotorVelocityTask task;
     @Override
     public void init() {
-        telemetry.addData("Status", "Initialized");
+        robot = new Robot(new RoboatConfig(),hardwareMap);
 
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-        leftBack  = hardwareMap.get(DcMotor.class, "left_back");
-        rightBack = hardwareMap.get(DcMotor.class, "right_back");
-        rightFront = hardwareMap.get(DcMotor.class, "right_front");
-        leftFront = hardwareMap.get(DcMotor.class, "left_front");
-
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
-
-        // Tell the driver that initialization is complete.
-        telemetry.addData("Status", "Initialized");
-
-        localizer  = new EncoderLocalizer(new Encoder(leftBack,2400),new Encoder(rightBack,2400),new Encoder(rightFront,2400),36,385,0.95634479561);
-        mecController = new MecanumController(new FTCMotor(rightFront),new FTCMotor(rightBack),new FTCMotor(leftFront),new FTCMotor(leftBack));
-        ptp = new PTPController(mecController,localizer);
+        launcher = new FTCMotor(hardwareMap.get(DcMotor.class,"launcher1"));
+        launcherEncoder = new Encoder(hardwareMap.get(DcMotor.class,"launcher1"),28);
+        task = new MotorVelocityTask(1500,300000,0.5, launcher,launcherEncoder, new PID(0.0007,0.0001,0.00, 0.0));
     }
-
-    /*
-     * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
-     */
     @Override
     public void init_loop() {
-    }
 
-    /*
-     * Code to run ONCE when the driver hits PLAY
-     */
+    }
     @Override
     public void start() {
-        runtime.reset();
-        queue.pause();
+        robot.queue.addTask(task);
     }
-
-    /*
-     * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
-     */
     @Override
     public void loop() {
-        localizer.relocalize();
-        queue.update();
+        robot.update();
+        telemetry.addData("Speed",task.getController().getSpeed());
+        telemetry.addData("Power",task.getController().getVPID().getPower());
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        Telemetry tele = dashboard.getTelemetry();
+        tele.addData("Speed",task.getController().getSpeed());
+        tele.addData("Power",task.getController().getVPID().getPower()*15000);
+        tele.addData("P",task.getController().getVPID().getP());
+        tele.addData("I",task.getController().getVPID().getI()*15000);
+        tele.update();
         telemetry.update();
     }
-
-    /*
-     * Code to run ONCE after the driver hits STOP
-     */
     @Override
     public void stop() {
+
     }
 
 }

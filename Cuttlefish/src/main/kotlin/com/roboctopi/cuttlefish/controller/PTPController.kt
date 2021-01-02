@@ -1,6 +1,5 @@
 package com.roboctopi.cuttlefish.controller
 
-import com.roboctopi.cuttlefish.localizer.EncoderLocalizer
 import com.roboctopi.cuttlefish.localizer.Localizer
 import com.roboctopi.cuttlefish.localizer.NullLocalizer
 import com.roboctopi.cuttlefish.utils.PID
@@ -17,7 +16,9 @@ class PTPController
     var rPos:Pose = Pose(0.0,0.0,0.0);
     var pPos:Pose = Pose(0.0,0.0,0.0);
     var distance:Double = 0.0;
-    var debug:Pose = Pose(0.0,0.0,0.0);
+
+    var movePowerThreshold = 0.2;
+    var moveSpeedThreshold = 0.015;
 
     constructor(mecController: MecanumController,
                 localizer: Localizer)
@@ -26,11 +27,13 @@ class PTPController
         this.localizer = localizer;
     }
     constructor(mecController: MecanumController,
-                localizer: Localizer,movePD:PID)
+                localizer: Localizer,movePD:PID, movePowerThreshold:Double, moveSpeedThreshold:Double)
     {
         controller = mecController;
         this.localizer = localizer;
         mPD = movePD;
+        this.movePowerThreshold = movePowerThreshold;
+        this.moveSpeedThreshold = moveSpeedThreshold;
     }
     fun gotoPointLoop(point:Waypoint, endPoint: Pose = Pose(0.0,0.0,0.0)): Boolean {
         var direction:Pose = point.position.clone();
@@ -47,9 +50,9 @@ class PTPController
         val power = -mPD.update(dist);
 
         direction.scale(power,false);
-        debug = direction.clone();
 
-        if((Math.abs(power) > 0.2||localizer.speed>0.015) && (Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
+       // if((Math.abs(power) > 0.2||localizer.speed>0.015) &&(Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
+        if((Math.abs(power) > movePowerThreshold||localizer.speed>moveSpeedThreshold||Math.abs(controller.rPID.power) > controller.roteAntiStallThreshhold) && (Math.abs(localizer.pos.r-direction.r)>point.rSlop||dist>point.tSlop))
         {
             controller.setVec(direction, 1.0, true, 3.0, localizer.pos.r);
             return false;
