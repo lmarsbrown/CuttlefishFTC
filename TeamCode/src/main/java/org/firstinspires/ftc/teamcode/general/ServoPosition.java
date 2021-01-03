@@ -27,20 +27,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.general;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.roboctopi.cuttlefish.Queue.TaskQueue;
-import com.roboctopi.cuttlefish.controller.MecanumController;
-import com.roboctopi.cuttlefish.controller.PTPController;
-import com.roboctopi.cuttlefish.localizer.EncoderLocalizer;
+import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.wrappers.Encoder;
-import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
+import org.firstinspires.ftc.teamcode.config.RoboatConfig;
+import org.firstinspires.ftc.teamcode.config.Robot;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -56,76 +51,65 @@ import org.firstinspires.ftc.teamcode.wrappers.FTCMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="motor test", group="Iterative Opmode")
+@TeleOp(name="Servo Position Finder", group="Iterative Opmode")
 //@Disabled
-public class notaplant extends OpMode
+public class ServoPosition extends OpMode
 {
-    // Declare OpMode members.
-    private ElapsedTime runtime = new ElapsedTime();
+    Servo servo;
 
-    private DcMotor launcherMotor1;
-    private DcMotor launcherMotor2;
-    private EncoderLocalizer localizer;
-    private MecanumController mecController;
-    private PTPController ptp;
-    private TaskQueue queue = new TaskQueue();
+    double servoPos = 0.0;
+    boolean pressed = false;
 
-    /*
-     * Code to run ONCE when the driver hits INIT
-     */
     @Override
-    public void init() {
-        telemetry.addData("Status", "Initialized");
-
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
-
-
-        launcherMotor1 = hardwareMap.get(DcMotor.class, "launcherMotor1");
-        launcherMotor2 = hardwareMap.get(DcMotor.class, "launcherMotor2");
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
-
-
-        // Tell the driver that initialization is complete.
-        telemetry.addData("Status", "Initialized");
-
+    public void init()
+    {
+        servo = hardwareMap.get(Servo.class,"pusher");
     }
-
-    /*
-     * Code to run REPEATEDLY after the driver hits INIT, but before they hit PLAY
-     */
     @Override
     public void init_loop() {
-    }
 
-    /*
-     * Code to run ONCE when the driver hits PLAY
-     */
+    }
     @Override
-    public void start() {
-        runtime.reset();
-        queue.pause();
-    }
+    public void start()
+    {
 
-    /*
-     * Code to run REPEATEDLY after the driver hits PLAY but before they hit STOP
-     */
+    }
     @Override
     public void loop() {
+        if(gamepad1.a && !pressed)
+        {
+            servoPos += 0.1;
+            pressed = true;
+        }
+        else if (gamepad1.b && !pressed)
+        {
+            servoPos += -0.1;
+            pressed = true;
+        }
+        else if (gamepad1.x && !pressed)
+        {
+            servoPos += 0.01;
+            pressed = true;
+        }
+        else if (gamepad1.y && !pressed)
+        {
+            servoPos += -0.01;
+            pressed = true;
+        }
+
+        if(!(gamepad1.a || gamepad1.b || gamepad1.x || gamepad1.y))
+        {
+            pressed = false;
+        }
 
 
+        servo.setPosition(servoPos);
+        telemetry.addData("Servo Position",servoPos) ;
         telemetry.update();
-        launcherMotor1.setPower(0.5);
-        launcherMotor2.setPower(0.5);
     }
-
-    /*
-     * Code to run ONCE after the driver hits STOP
-     */
     @Override
     public void stop() {
+
     }
 
 }

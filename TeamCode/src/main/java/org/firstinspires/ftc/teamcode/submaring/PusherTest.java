@@ -27,23 +27,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.roboat;
+package org.firstinspires.ftc.teamcode.submaring;
 
-//import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.robocol.TelemetryMessage;
-import com.roboctopi.cuttlefish.Queue.MotorVelocityTask;
-import com.roboctopi.cuttlefish.components.Motor;
-import com.roboctopi.cuttlefish.utils.PID;
+import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.RoboatConfig;
 import org.firstinspires.ftc.teamcode.config.Robot;
-import org.firstinspires.ftc.teamcode.wrappers.Encoder;
-import org.firstinspires.ftc.teamcode.wrappers.CuttlefishMotor;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -59,21 +52,21 @@ import org.firstinspires.ftc.teamcode.wrappers.CuttlefishMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="LauncherTest", group="Iterative Opmode")
+@TeleOp(name="Pusher Test", group="Iterative Opmode")
 //@Disabled
-public class LauncherTest extends OpMode
+public class PusherTest extends OpMode
 {
-    Robot robot;
-    CuttlefishMotor launcher;
-    Encoder launcherEncoder;
-    MotorVelocityTask task;
+    Servo pusher;
+    Servo hopper;
+    DcMotor intake;
+    boolean pressed = false;
     @Override
     public void init() {
-        robot = new Robot(new RoboatConfig(),hardwareMap);
-
-        launcher = new CuttlefishMotor(hardwareMap.get(DcMotor.class,"launcher1"));
-        launcherEncoder = new Encoder(hardwareMap.get(DcMotor.class,"launcher1"),28);
-        task = new MotorVelocityTask(1500,300000,0.5, launcher,launcherEncoder, new PID(0.0007,0.0001,0.00, 0.0));
+        pusher = hardwareMap.get(Servo.class,"pusher");
+        hopper = hardwareMap.get(Servo.class,"hopper");
+        intake = hardwareMap.get(DcMotor.class,"right_back");
+        pusher.setPosition(0.79);
+        hopper.setPosition(0.96);
     }
     @Override
     public void init_loop() {
@@ -81,21 +74,36 @@ public class LauncherTest extends OpMode
     }
     @Override
     public void start() {
-        robot.queue.addTask(task);
+
     }
     @Override
     public void loop() {
-        robot.update();
-        telemetry.addData("Speed",task.getController().getSpeed());
-        telemetry.addData("Power",task.getController().getVPID().getPower());
-        //FtcDashboard dashboard = FtcDashboard.getInstance();
-        //Telemetry tele = dashboard.getTelemetry();
-        //tele.addData("Speed",task.getController().getSpeed());
-        //tele.addData("Power",task.getController().getVPID().getPower()*15000);
-        //tele.addData("P",task.getController().getVPID().getP());
-        //tele.addData("I",task.getController().getVPID().getI()*15000);
-        //tele.update();
-        telemetry.update();
+        if(gamepad1.a && !pressed)
+        {
+            pusher.setPosition(0.5);
+            pressed = true;
+        }
+        else if (gamepad1.b && !pressed)
+        {
+            pusher.setPosition(0.79);
+            pressed = true;
+        }
+        else if (gamepad1.x && !pressed)
+        {
+            hopper.setPosition(0.705);
+            pressed = true;
+        }
+        else if (gamepad1.y && !pressed)
+        {
+            hopper.setPosition(0.96);
+            pressed = true;
+        }
+        if(!(gamepad1.a || gamepad1.b))
+        {
+            pressed = false;
+        }
+
+        intake.setPower(gamepad1.left_stick_y);
     }
     @Override
     public void stop() {
